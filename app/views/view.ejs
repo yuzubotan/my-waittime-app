@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>音声操作可能なカウントダウンタイマー</title>
+    <style>
+      body {
+            width: 340px;
+            height: 450px;
+            background-color: #a8bafa;
+        }
+      
+      td {
+        padding-right: 20px;
+      }
+      
+      .button {
+        text-align: center;
+      }
+      
+      table {
+        width: 100%;
+      }
+      
+      .cel {
+        padding: 5px;
+      }
+</style>
+</head>
+<body>
+  <div id="timer"></div>
+ <table border="2" style="border-collapse:collapse;">
+   <% for (let i in data) { %>
+      <tr>
+        <td rowspan="2" class="cel"><%= data[i].id %></td>
+        <td colspan="2" class="cel">予約:<br><% const timeObject = new Date(data[i].time); %>
+            <%= timeObject.toLocaleString('ja-JP',{hour: '2-digit', minute: '2-digit'}) %></td>
+        <td colspan="2" class="cel">開始:<br><%= data[i].startTime.toLocaleString('ja-JP', { hour: '2-digit', minute: '2-digit' }) %></td>
+        
+        
+        <td><a href="javascript:del(<%= data[i].id %>)">[del]</a></td>
+     </tr>
+     <tr>
+        <td class="cel"><%= data[i].number %>本</td>
+        <td class="cel"><%= data[i].number / 10 %>分</td>
+        <td colspan="2"><%= data[i].name %></td>
+        <td colspan="2"><%= data[i].checked %></td>
+        
+     </tr>
+    <% } %>
+  </table>
+  
+  <div class="button">
+    <button onclick="location.href='/'">TOP</button>
+  </div>
+     
+  <div class="button">
+    <a href="javascript:reset()">リセット</a>
+  </div>
+  
+
+<script>
+  
+  const socket = new WebSocket('wss://twisty-hilarious-wednesday.glitch.me/');
+  socket.addEventListener('message', (event) => {
+    const message = JSON.parse(event.data);
+    updateTimer();
+    
+    function updateTimer() {
+            const timerElement = document.getElementById('timer');
+            let hours = Math.floor(message.timerValue / 3600);
+            let minutes = Math.floor((message.timerValue % 3600) / 60);
+            let seconds = message.timerValue % 60;
+            
+            timerElement.textContent = `${String(hours).padStart(1, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+  })
+  
+  function del(id) {
+    let result = window.confirm('id=' + id + 'を削除しますか？');
+    if (result) {
+      window.location = "/view/del?id=" + id;
+    }
+  }
+  
+  function reset() {
+    let result = window.confirm('データベースをリセットしますか？');
+    if (result) {
+      // サーバーサイドのエンドポイントを呼び出す
+      fetch('/reset', { method: 'POST' })
+        .then(response => {
+          if (response.ok) {
+            // リセット後にトップページにリダイレクト
+            window.location = "/";
+          } else {
+            console.error('データベースのリセットに失敗しました。');
+          }
+        })
+        .catch(error => {
+          console.error('ネットワークエラー:', error);
+        });
+    }
+  }
+  
+ 
+</script>
+</body>
+</html>
